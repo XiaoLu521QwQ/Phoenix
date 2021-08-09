@@ -10,18 +10,18 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/sandertv/go-raknet"
-	"phoenix/internal"
-	"phoenix/minecraft/protocol"
-	"phoenix/minecraft/protocol/login"
-	"phoenix/minecraft/protocol/packet"
-	"phoenix/minecraft/resource"
-	"phoenix/minecraft/text"
 	"go.uber.org/atomic"
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"io"
 	"log"
 	"net"
+	"phoenix/internal"
+	"phoenix/minecraft/protocol"
+	"phoenix/minecraft/protocol/login"
+	"phoenix/minecraft/protocol/packet"
+	"phoenix/minecraft/resource"
+	"phoenix/minecraft/text"
 	"strings"
 	"sync"
 	"time"
@@ -47,10 +47,14 @@ var exemptedPacks = []exemptedResourcePack{
 	},
 }
 
+type Callback func(output *packet.CommandOutput) error
+
+
 // Conn represents a Minecraft (Bedrock Edition) connection over a specific net.Conn transport layer. Its
 // methods (Read, Write etc.) are safe to be called from multiple goroutines simultaneously, but ReadPacket
 // must not be called on multiple goroutines simultaneously.
 type Conn struct {
+	callbacks map[string]Callback
 	// once is used to ensure the Conn is closed only a single time. It protects the channel below from being
 	// closed multiple times.
 	once  sync.Once
@@ -1246,4 +1250,21 @@ func (conn *Conn) closeErr(op string) error {
 		return conn.wrap(DisconnectError(msg), op)
 	}
 	return conn.wrap(errClosed, op)
+}
+
+func (conn *Conn) SendCommand(command string, callback Callback) error {
+	requestID := uuid.New()
+	callbackID := uuid.New()
+	commandRequest := &packet.CommandRequest{
+		CommandOrigin: protocol.CommandOrigin{
+			Origin:         protocol.CommandOriginPlayer,
+			UUID:           callbackID,
+			RequestID:      requestID.String(),
+			PlayerUniqueID: 0,
+		},
+		CommandLine: command,
+		Internal: false,
+	}
+	conn.callbacks[callbackID.String()] = callback
+	return conn.WritePacket(commandRequest)
 }

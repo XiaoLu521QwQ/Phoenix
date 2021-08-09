@@ -48,7 +48,7 @@ func (p *packetData) decode(conn *Conn) (pk packet.Packet, err error) {
 	}()
 	pk.Unmarshal(r)
 	if p.payload.Len() != 0 {
-		return pk, fmt.Errorf("%T: %v unread bytes left: 0x%x", pk, p.payload.Len(), p.payload.Bytes())
+		// return pk, fmt.Errorf("%T: %v unread bytes left: 0x%x", pk, p.payload.Len(), p.payload.Bytes())
 	}
 	return pk, nil
 }

@@ -10,17 +10,17 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/sandertv/go-raknet"
-	"phoenix/internal/resource"
-	"phoenix/minecraft/auth"
-	"phoenix/minecraft/protocol"
-	"phoenix/minecraft/protocol/login"
-	"phoenix/minecraft/protocol/packet"
 	"golang.org/x/oauth2"
 	"io/ioutil"
 	"log"
 	rand2 "math/rand"
 	"net"
 	"os"
+	"phoenix/internal/resource"
+	"phoenix/minecraft/auth"
+	"phoenix/minecraft/protocol"
+	"phoenix/minecraft/protocol/login"
+	"phoenix/minecraft/protocol/packet"
 	"strconv"
 	"strings"
 	"time"
@@ -154,7 +154,7 @@ func (d Dialer) DialContext(ctx context.Context, network, address string) (conn 
 	conn.clientData = d.ClientData
 	conn.packetFunc = d.PacketFunc
 	conn.cacheEnabled = d.EnableClientCache
-
+	conn.callbacks = make(map[string]Callback)
 	// Disable the batch packet limit so that the server can send packets as often as it wants to.
 	conn.dec.DisableBatchPacketLimit()
 
@@ -321,8 +321,9 @@ func defaultIdentityData(data *login.IdentityData) {
 		data.Identity = uuid.New().String()
 	}
 	if data.DisplayName == "" {
-		data.DisplayName = "Steve"
+		data.DisplayName = "CAIMEO_Bot"
 	}
+
 }
 
 // splitPong splits the pong data passed by ;, taking into account escaping these.
