@@ -33,6 +33,10 @@ func (s Space) Plot(v Vector) {
 	s.plot(v)
 }
 
+func (s Space) GetPointer() Vector {
+	return s.pointer
+}
+
 func (s Space) SetPointer(v Vector) {
 	s.pointer = v
 }

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/pterm/pterm"
-	"phoenix/minecraft/auth"
 	"phoenix/minecraft/function"
+	"phoenix/minecraft/function/generator"
 	"phoenix/minecraft/ligo"
 	"phoenix/minecraft/protocol/packet"
 )
@@ -28,6 +28,8 @@ func Run(address string) {
 		spaces:    make(map[string]*function.Space),
 		virtualMachine: ligo.NewVM(),
 	}
+
+	generator.PluginInit(worker.virtualMachine)
 	pterm.Error.Prefix = pterm.Prefix{
 		Text:  "ERROR",
 		Style: pterm.NewStyle(pterm.BgBlack, pterm.FgRed),
@@ -37,14 +39,18 @@ func Run(address string) {
 		Value: "overworld",
 	}
 
-	worker.spaces["overworld"] = function.NewSpace()
 
+	worker.spaces["overworld"] = function.NewSpace()
+	worker.virtualMachine.Vars["space"] = ligo.Variable{
+		Type: ligo.TypeStruct,
+		Value: worker.spaces["overworld"],
+	}
 	worker.virtualMachine.Funcs["plot"] = func(vm *ligo.VM, variable ...ligo.Variable) ligo.Variable {
-		work_space := worker.spaces[vm.Vars["space"].Value.(string)]
+		workSpace := worker.spaces[vm.Vars["space"].Value.(string)]
 		if variable[0].Type == ligo.TypeArray {
-			work_space.PlotArray(variable[0].Value.([]function.Vector))
+			workSpace.PlotArray(variable[0].Value.([]function.Vector))
 		} else if variable[0].Type == ligo.TypeFloat {
-			work_space.Plot(variable[0].Value.(function.Vector))
+			workSpace.Plot(variable[0].Value.(function.Vector))
 		} else {
 			return ligo.Variable{Type: ligo.TypeErr, Value: "plot function's first argument should be of a vector or vector slice type"}
 		}
@@ -55,7 +61,7 @@ func Run(address string) {
 
 
 	dialer := Dialer{
-		TokenSource: auth.TokenSource,
+		//TokenSource: auth.TokenSource,
 	}
 	conn, err := dialer.Dial("raknet", address)
 	if err != nil {
@@ -64,14 +70,14 @@ func Run(address string) {
 	defer conn.Close()
 
 	worker.virtualMachine.Funcs["get"] = func(vm *ligo.VM, variable ...ligo.Variable) ligo.Variable {
-		err := conn.SendCommand("testforblock ~ ~ ~ air", func(output *packet.CommandOutput) error {
+		err := conn.SendCommand(fmt.Sprintf("execute %s ~ ~ ~ testforblock ~ ~ ~ air", Operator), func(output *packet.CommandOutput) error {
 			pos, _ := function.SliceAtoi(output.OutputMessages[0].Parameters)
 			if len(pos) != 3 {
 				return errors.New("testforblock function have got wrong number of positions")
 			} else {
-				space := worker.GetSpace(vm.Vars["space"].Value.(string))
+				space := vm.Vars["space"].Value.(*function.Space)
 				space.SetPointer(pos)
-				pterm.Info.Println(fmt.Sprintf("Position got: %v", pos))
+				_ = conn.Info(fmt.Sprintf("Position got: %v", pos))
 			}
 			return nil
 		})
@@ -86,7 +92,7 @@ func Run(address string) {
 		// Collector : Get Position
 		eval, err := worker.virtualMachine.Eval(`(get)`)
 		if err != nil {
-			pterm.Info.Println(err)
+			pterm.Error.Println(err)
 		} else if eval.Value != nil {
 			pterm.Info.Println(eval.Value)
 		}
@@ -114,9 +120,11 @@ func Run(address string) {
 					pterm.Info.Println(fmt.Sprintf("[%s] %s", p.SourceName, p.Message))
 					value, err := worker.virtualMachine.Eval(p.Message)
 					if err != nil {
-						pterm.Error.Println(err)
+						conn.Error(err.Error())
 					} else {
-						pterm.Info.Println(value.Value)
+						if err := conn.Info(fmt.Sprintf("> %s", value.Value)) ; err != nil {
+							pterm.Warning.Println(err)
+						}
 					}
 				}
 			}
@@ -127,7 +135,7 @@ func Run(address string) {
 			// TODO : Handle !ok
 			if ok {
 				if !p.OutputMessages[0].Success {
-					pterm.Warning.Println(fmt.Sprintf("Unknown command: %s. Please check that the command exists and that you have permission to use it.", p.OutputMessages[0].Parameters[0] ))
+					pterm.Warning.Println(fmt.Sprintf("Unknown command: %s. Please check that the command exists and that you have permission to use it.", p.OutputMessages[0].Parameters[0]))
 				}
 				err := callback(p)
 				if err != nil {
@@ -138,10 +146,9 @@ func Run(address string) {
 			}
 		}
 
-
 		// Write a packet to the connection: Similarly to ReadPacket, WritePacket will (only) return an error
 		// if the connection is closed.
-		p := &packet.RequestChunkRadius{ChunkRadius: 32}
+		p := &packet.RequestChunkRadius{ChunkRadius: 3200}
 		if err := conn.WritePacket(p); err != nil {
 			break
 		}

@@ -1252,19 +1252,3 @@ func (conn *Conn) closeErr(op string) error {
 	return conn.wrap(errClosed, op)
 }
 
-func (conn *Conn) SendCommand(command string, callback Callback) error {
-	requestID := uuid.New()
-	callbackID := uuid.New()
-	commandRequest := &packet.CommandRequest{
-		CommandOrigin: protocol.CommandOrigin{
-			Origin:         protocol.CommandOriginPlayer,
-			UUID:           callbackID,
-			RequestID:      requestID.String(),
-			PlayerUniqueID: 0,
-		},
-		CommandLine: command,
-		Internal: false,
-	}
-	conn.callbacks[callbackID.String()] = callback
-	return conn.WritePacket(commandRequest)
-}
