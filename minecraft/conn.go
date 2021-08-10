@@ -49,12 +49,20 @@ var exemptedPacks = []exemptedResourcePack{
 
 type Callback func(output *packet.CommandOutput) error
 
-
+type WorldConfig struct {
+	operator string
+	block struct {
+		name string
+		data int64
+	}
+}
 // Conn represents a Minecraft (Bedrock Edition) connection over a specific net.Conn transport layer. Its
 // methods (Read, Write etc.) are safe to be called from multiple goroutines simultaneously, but ReadPacket
 // must not be called on multiple goroutines simultaneously.
 type Conn struct {
+	worldConfig WorldConfig
 	callbacks map[string]Callback
+
 	// once is used to ensure the Conn is closed only a single time. It protects the channel below from being
 	// closed multiple times.
 	once  sync.Once
@@ -1251,4 +1259,5 @@ func (conn *Conn) closeErr(op string) error {
 	}
 	return conn.wrap(errClosed, op)
 }
+
 

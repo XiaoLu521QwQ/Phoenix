@@ -25,23 +25,19 @@ func CLear(space *Space) {
 	space.raw = nil
 }
 
-func Sphere(space *Space) {
-
-}
-
-func (s Space) Plot(v Vector) {
+func (s *Space) Plot(v Vector) {
 	s.plot(v)
 }
 
-func (s Space) GetPointer() Vector {
+func (s *Space) GetPointer() Vector {
 	return s.pointer
 }
 
-func (s Space) SetPointer(v Vector) {
+func (s *Space) SetPointer(v Vector) {
 	s.pointer = v
 }
 
-func (s Space) PlotArray(v []Vector) {
+func (s *Space) PlotArray(v []Vector) {
 	for _, vv := range v {
 		s.Plot(vv)
 	}
@@ -52,5 +48,6 @@ func NewSpace() *Space {
 		basicVector: []Vector{
 			{0, 0, 1}, {0, 1, 0}, {1, 0, 0},
 		},
+		pointer: []float64{0, 0, 0},
 	}
 }

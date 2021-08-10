@@ -32,3 +32,10 @@ func GetHash(path string) (string, error) {
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
+
+func AddVector(v1, v2 Vector) Vector {
+	v1[0] += v2[0]
+	v1[1] += v2[1]
+	v1[2] += v2[2]
+	return v1
+}

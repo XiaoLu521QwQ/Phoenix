@@ -1,6 +1,7 @@
 package ligo
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -137,6 +138,7 @@ type ProcessCommon struct {
 // defined function maps, in-built function maps and a global
 // scope pointing to the global Scope VM
 type VM struct {
+	ctx				*context.Context
 	global         *VM
 	exception      string
 	Vars           map[string]Variable
@@ -799,7 +801,7 @@ func (vm *VM) fork(tkns []string) (Variable, error) {
 // namespaceEval method is used to run the code in a namespace environment
 func (vm *VM) namespaceEval(tkns []string) (Variable, error) {
 	if len(tkns) < 3 {
-		return ligoNil, Error("Expected atleast 3 expressions, got " + fmt.Sprint(len(tkns)))
+		return ligoNil, Error("Expected at least 3 expressions, got " + fmt.Sprint(len(tkns)))
 	}
 
 	ns := tkns[1]
