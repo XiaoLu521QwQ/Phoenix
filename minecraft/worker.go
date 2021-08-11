@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/pterm/pterm"
 	"github.com/schollz/progressbar/v3"
+	"phoenix/minecraft/auth"
 	"phoenix/minecraft/function"
 	"phoenix/minecraft/function/generator"
 	"phoenix/minecraft/ligo"
@@ -12,8 +13,6 @@ import (
 	"time"
 )
 
-const Operator = "CAIMEOX"
-const maxWorkers = 100
 
 type Worker struct {
 	spaces map[string]*function.Space
@@ -24,8 +23,11 @@ func (w *Worker) GetSpace(name string) *function.Space {
 	return w.spaces[name]
 }
 
-func Run(address string) {
-	pterm.EnableDebugMessages()
+func Run(path string) {
+	config := function.ReadConfig(path)
+	if config.Debug.Enabled {
+		pterm.EnableDebugMessages()
+	}
 	pterm.Error.Prefix = pterm.Prefix{
 		Text:  "ERROR",
 		Style: pterm.NewStyle(pterm.BgBlack, pterm.FgRed),
@@ -46,16 +48,23 @@ func Run(address string) {
 	}
 
 
+	dialer := func() Dialer {
+		if config.User.Auth {
+			return Dialer {
+				TokenSource: auth.TokenSource,
+			}
+		} else {
+			return Dialer {}
+		}
+	}()
 
-	dialer := Dialer{
-		//TokenSource: auth.TokenSource,
-	}
-	conn, err := dialer.Dial("raknet", address)
+	conn, err := dialer.Dial("raknet", config.Connection.RemoteAddress)
 	if err != nil {
 		pterm.Error.Println(err)
 	}
 	defer conn.Close()
-	conn.worldConfig.operator = Operator
+	conn.worldConfig.operator = config.User.Operator
+	conn.worldConfig.bot = config.User.Bot
 
 	// Basic functions
 	worker.virtualMachine.Funcs["plot"] = func(vm *ligo.VM, variable ...ligo.Variable) ligo.Variable {
@@ -99,7 +108,7 @@ func Run(address string) {
 
 	worker.virtualMachine.Funcs["get"] = func(vm *ligo.VM, variable ...ligo.Variable) ligo.Variable {
 		conn.SendCommand("gamerule sendcommandfeedback true", func(output *packet.CommandOutput) error {return nil})
-		err := conn.SendCommand(fmt.Sprintf("execute %s ~ ~ ~ testforblock ~ ~ ~ air", Operator), func(output *packet.CommandOutput) error {
+		err := conn.SendCommand(fmt.Sprintf("execute %s ~ ~ ~ testforblock ~ ~ ~ air", conn.worldConfig.operator), func(output *packet.CommandOutput) error {
 			pos, _ := function.SliceAtoi(output.OutputMessages[0].Parameters)
 			if len(pos) != 3 {
 				return errors.New("testforblock function have got wrong number of positions")
@@ -130,6 +139,7 @@ func Run(address string) {
 		}
 	}
 	if err := conn.DoSpawn(); err == nil {
+		pterm.Info.Println(fmt.Sprintf("Bot<%s> successfully spawned.", conn.worldConfig.bot))
 		// Collector : Get Position
 		eval, err := worker.virtualMachine.Eval(`(get)`)
 		if err != nil {
@@ -157,7 +167,7 @@ func Run(address string) {
 		switch p := pk.(type) {
 		case *packet.Text:
 			if p.TextType == packet.TextTypeChat {
-				if Operator == p.SourceName {
+				if conn.worldConfig.operator == p.SourceName {
 					pterm.Info.Println(fmt.Sprintf("[%s] %s", p.SourceName, p.Message))
 					value, err := worker.virtualMachine.Eval(p.Message)
 					if err != nil {

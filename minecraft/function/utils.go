@@ -3,8 +3,11 @@ package function
 import (
 "crypto/sha256"
 "encoding/hex"
-"io"
-"os"
+	"github.com/pelletier/go-toml"
+	"io"
+	"io/ioutil"
+	"log"
+	"os"
 "strconv"
 )
 
@@ -38,4 +41,48 @@ func AddVector(v1, v2 Vector) Vector {
 	v1[1] += v2[1]
 	v1[2] += v2[2]
 	return v1
+}
+
+type config struct {
+	Connection struct {
+		RemoteAddress string
+	}
+	User struct {
+		Bot string
+		Auth bool
+		Operator string
+	}
+	Debug struct{
+		Enabled bool
+	}
+}
+
+func ReadConfig(path string) config {
+	c := config{}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		f, err := os.Create(path)
+		if err != nil {
+			log.Fatalf("error creating config: %v", err)
+		}
+		data, err := toml.Marshal(c)
+		if err != nil {
+			log.Fatalf("error encoding default config: %v", err)
+		}
+		if _, err := f.Write(data); err != nil {
+			log.Fatalf("error writing encoded default config: %v", err)
+		}
+		_ = f.Close()
+	}
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatalf("error reading config: %v", err)
+	}
+	if err := toml.Unmarshal(data, &c); err != nil {
+		log.Fatalf("error decoding config: %v", err)
+	}
+	data, _ = toml.Marshal(c)
+	if err := ioutil.WriteFile(path, data, 0644); err != nil {
+		log.Fatalf("error writing config file: %v", err)
+	}
+	return c
 }

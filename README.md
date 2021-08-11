@@ -40,9 +40,14 @@
   [Connection]
   # RemoteAddress is the address of the server you want to entry.
   RemoteAddress = "127.0.0.1:19132"
-  [Auth]
-  # EnableAuth if you need to authenticate to the server.
-  EnableAuth = true 
+  [User]
+  # Enable auth if you need to authenticate to the server.
+  Auth = true
+  # Set to the operator
+  User = "CAIMEOX"
+  Bot = "CAIMEO_Bot"
+  [Debug]
+  Enabled = false 
   ```
 
 - Launch Fast Builder, soon the Bot will join the targeted server.

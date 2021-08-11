@@ -51,6 +51,7 @@ type Callback func(output *packet.CommandOutput) error
 
 type WorldConfig struct {
 	operator string
+	bot string
 	block struct {
 		name string
 		data int64
