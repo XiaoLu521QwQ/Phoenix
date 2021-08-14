@@ -55,6 +55,10 @@ type config struct {
 	Debug struct{
 		Enabled bool
 	}
+	Lib struct {
+		Std bool
+		Script []string
+	}
 }
 
 func ReadConfig(path string) config {

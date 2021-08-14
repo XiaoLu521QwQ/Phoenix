@@ -155,7 +155,7 @@ func (d Dialer) DialContext(ctx context.Context, network, address string) (conn 
 	conn.packetFunc = d.PacketFunc
 	conn.cacheEnabled = d.EnableClientCache
 	conn.callbacks = make(map[string]Callback)
-	conn.identityData.DisplayName = conn.worldConfig.bot
+	conn.identityData.DisplayName = conn.WorldConfig.bot
 	// Disable the batch packet limit so that the server can send packets as often as it wants to.
 	conn.dec.DisableBatchPacketLimit()
 

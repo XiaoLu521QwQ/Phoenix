@@ -11,4 +11,3 @@ func main() {
 	pterm.Info.Println("Author: CAIMEO")
 	minecraft.Run("config.toml")
 }
-

@@ -57,7 +57,7 @@ type BarWriter struct {
 }
 
 func (b BarWriter) Write(p []byte) (int, error) {
-	err := b.conn.Actionbar(b.conn.worldConfig.operator, string(p))
+	err := b.conn.Actionbar(b.conn.WorldConfig.Operator, string(p))
 	return 0, err
 }
 
@@ -66,7 +66,7 @@ func (conn *Conn) Actionbar(target, text string) error {
 }
 
 func (conn *Conn) SetBlock(pos function.Vector) error {
-	cmd := fmt.Sprintf("setblock %v %v %v %s %d", pos[0], pos[1], pos[2], conn.worldConfig.block.name, conn.worldConfig.block.data)
+	cmd := fmt.Sprintf("setblock %v %v %v %s %d", pos[0], pos[1], pos[2], conn.WorldConfig.block.name, conn.WorldConfig.block.data)
 	return conn.SendCommandNoCallback(cmd)
 }
 

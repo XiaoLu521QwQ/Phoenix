@@ -17,6 +17,8 @@ import (
 	"log"
 	"net"
 	"phoenix/internal"
+	"phoenix/minecraft/function"
+	"phoenix/minecraft/ligo"
 	"phoenix/minecraft/protocol"
 	"phoenix/minecraft/protocol/login"
 	"phoenix/minecraft/protocol/packet"
@@ -50,9 +52,9 @@ var exemptedPacks = []exemptedResourcePack{
 type Callback func(output *packet.CommandOutput) error
 
 type WorldConfig struct {
-	operator string
-	bot string
-	block struct {
+	Operator string
+	bot      string
+	block    struct {
 		name string
 		data int64
 	}
@@ -61,8 +63,9 @@ type WorldConfig struct {
 // methods (Read, Write etc.) are safe to be called from multiple goroutines simultaneously, but ReadPacket
 // must not be called on multiple goroutines simultaneously.
 type Conn struct {
-	worldConfig WorldConfig
-	callbacks map[string]Callback
+	Worker      Worker
+	WorldConfig WorldConfig
+	callbacks   map[string]Callback
 
 	// once is used to ensure the Conn is closed only a single time. It protects the channel below from being
 	// closed multiple times.
@@ -146,6 +149,10 @@ type Conn struct {
 // key is generated.
 func newConn(netConn net.Conn, key *ecdsa.PrivateKey, log *log.Logger) *Conn {
 	conn := &Conn{
+		Worker: Worker{
+			spaces:         make(map[string]*function.Space),
+			VirtualMachine: ligo.NewVM(),
+		},
 		enc:         packet.NewEncoder(netConn),
 		dec:         packet.NewDecoder(netConn),
 		pool:        packet.NewPool(),
@@ -158,6 +165,12 @@ func newConn(netConn net.Conn, key *ecdsa.PrivateKey, log *log.Logger) *Conn {
 		log:         log,
 		chunkRadius: 16,
 		hdr:         &packet.Header{},
+	}
+	// Create space and pointer
+	conn.Worker.spaces["overworld"] = function.NewSpace()
+	conn.Worker.VirtualMachine.Vars["space"] = ligo.Variable{
+		Type: ligo.TypeStruct,
+		Value: conn.Worker.spaces["overworld"],
 	}
 	conn.expectedIDs.Store([]uint32{packet.IDLogin})
 	_, _ = rand.Read(conn.salt)

@@ -48,6 +48,12 @@
   Bot = "CAIMEO_Bot"
   [Debug]
   Enabled = false 
+  [Lib]
+  # Load Standard library, includes basic arithmetic functions like +, - and array operations.
+  Std = true
+  # Load your own Fast Builder Script.
+  # Check scripts/example.scm for more information.
+  Script = ["path_to_script1.scm","path_to_script2.scm"]
   ```
 
 - Launch Fast Builder, soon the Bot will join the targeted server.
@@ -362,3 +368,11 @@ There are two loop constructs
   ```lisp
   (ellipse length width height facing)
   ```
+  
+You have to apply `plot` function to generate structures in Minecraft world.
+```lisp
+(plot Vectors)
+; Examples:
+(plot (round 5 3 4 "y"))
+(plot (sphere 10 9))
+```
